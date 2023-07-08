@@ -1,3 +1,4 @@
+/* eslint-disable prefer-rest-params */
 // Utility Functions
 import * as _ from "lodash";
 import * as moment from "moment";
@@ -10,21 +11,21 @@ let counter = 0;
 // parameters. First, a boolean called 'padRight' which by default is true. This means padding
 // will be applied to the right side of the string. Setting this to false will pad the left side of the
 // string. You can also specify the character you want to use to pad the string.
-export function pad(inputStr, width, ...args) {
+export function pad(initialStr, width, blank?, blank2?) {
   let padRight;
-  let padChar = " ";
+  let padChar;
   let result;
-  const str = inputStr + "";
+  const str = initialStr + "";
 
-  if (typeof args[0] === "boolean") {
-    padRight = args[0];
-    padChar = args[1] || " ";
-  } else if (typeof args[1] === "boolean") {
-    padRight = args[1];
-    padChar = args[0];
+  if (typeof arguments[2] == "boolean") {
+    padRight = arguments[2];
+    padChar = arguments[3] || " ";
+  } else if (typeof arguments[3] == "boolean") {
+    padRight = arguments[3];
+    padChar = arguments[2];
   } else {
     padRight = true; // padRight is true be default
-    padChar = args[0] || " "; // The padding character is just a space by default
+    padChar = arguments[2] || " "; // The padding character is just a space by default
   }
 
   if (str.length >= width) {
@@ -153,23 +154,21 @@ export const isBusinessDay = (module.exports.isBusinessDay = function (day) {
 });
 
 // This function takes an optional starting date to iterate from based
-const computeBusinessDay = (module.exports.computeBusinessDay = function (
-  businessDays,
-  ...args
-) {
-  const day = args[0] ? moment(args[0]) : moment();
-  let counter = 0;
+export const computeBusinessDay = (module.exports.computeBusinessDay =
+  function (businessDays, ...args): Date {
+    const day = args[0] ? moment(args[0]) : moment();
+    let counter = 0;
 
-  function addDays() {
-    day.add(1, "days");
-    if (isBusinessDay(day)) {
-      counter++;
+    function addDays() {
+      day.add(1, "days");
+      if (isBusinessDay(day)) {
+        counter++;
+      }
+      return counter === businessDays ? day.toDate() : addDays();
     }
-    return counter === businessDays ? day.toDate() : addDays();
-  }
 
-  return addDays();
-});
+    return addDays();
+  });
 
 export const newLineChar = function () {
   return "\r\n";
