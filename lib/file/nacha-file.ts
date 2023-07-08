@@ -13,16 +13,12 @@ import {
 } from "../utils";
 import { validateDataTypes, validateLengths } from "../validate";
 import * as fs from "fs";
-import { batchHeader } from "../batch";
-import { batchControl } from "../batch";
-import { entryFields } from "../entry";
-import { EntryAddenda } from "../entry-addenda";
-import { entryAddendaFields } from "../entry-addenda";
-
-import { Entry } from "../entry";
-import { Batch } from "../batch";
+import { Batch, batchControl, batchHeader } from "../batch";
+import { Entry, entryFields } from "../entry";
+import { EntryAddenda, entryAddendaFields } from "../entry-addenda";
 
 import * as async from "async";
+
 export const highLevelOverrides = [
   "immediateDestination",
   "immediateOrigin",
@@ -208,13 +204,14 @@ export class NachaFile {
       cb(string);
     });
   }
+
   generateControl(cb) {
     generateString(this.control, function (string) {
       cb(string);
     });
   }
 
-  generateFile(cb) {
+  generateFile(cb): Promise<string> {
     return new Promise((resolve) => {
       this.generateHeader((headerString) => {
         this.generateBatches((batchString, rows) => {
@@ -259,7 +256,7 @@ export class NachaFile {
     });
   }
 
-  static parseFile(filePath, cb?: (err: any, file?: any) => void) {
+  static parseFile(filePath, cb?: (err: any, file?: NachaFile) => void) {
     return new Promise((resolve, reject) => {
       fs.readFile(filePath, (err, data) => {
         if (err) {
