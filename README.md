@@ -6,9 +6,10 @@
 
 nACH is a Node.js module exposing both a high & low-level API for generating ACH (Automated Clearing House) files for use within the ACH network. It's design makes it a high-performance, dependable and frustration-free solution for developers.
 
- Note: nACH does not bundle a bank agreement/partnership to upload ACH files to the network :)
+Note: nACH does not bundle a bank agreement/partnership to upload ACH files to the network :)
 
 ## Getting Started
+
 To intall nACH, use NPM:
 
     $ npm i node-nach --save-dev
@@ -16,12 +17,13 @@ To intall nACH, use NPM:
 Then include the NPM module like so:
 
 ```js
-const nach = require('node-nach')
+const nach = require("node-nach");
 ```
 
 Now you're ready to start creating ACH files.
 
 ## ACH File Basics
+
 nACH implements the ACH file specification.
 
 Each ACH file is a flat text file (.txt) which contains records and entries. Within both records and entries, are "columns" called fields. To get a sense for what an ACH file actually looks like, check out the example below:
@@ -39,7 +41,7 @@ Each ACH file is a flat text file (.txt) which contains records and entries. Wit
     5225Your Company Inc                    0018036281PPDTrnsNicknaMar 6 150306   1081000030000002
     627101000019923698412584     0000015000RAj##765432hj  Jane Doe              A10081000030000005
     822500000100101000010000000150000000000000000018036281                         081000030000002
-    9000003000002000000060050600106000000015000000000026820                                       
+    9000003000002000000060050600106000000015000000000026820
     9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
     9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
     9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
@@ -47,9 +49,10 @@ Each ACH file is a flat text file (.txt) which contains records and entries. Wit
     9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
     9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
 
-Each line in an ACH file is always 94 bytes (or 94 characters) long, and the number of lines in an ACH file is required to *always* be a multiple of 10. This means, if a file doesn't contain enough rows of data to be a multiple of 10, the ACH specification requires you to fill in the remainder of the file with rows of 9s until the number of rows is a multiple of 10. Of course, nACH will handle all of this for you, but it's aways good to know why it's doing it.
+Each line in an ACH file is always 94 bytes (or 94 characters) long, and the number of lines in an ACH file is required to _always_ be a multiple of 10. This means, if a file doesn't contain enough rows of data to be a multiple of 10, the ACH specification requires you to fill in the remainder of the file with rows of 9s until the number of rows is a multiple of 10. Of course, nACH will handle all of this for you, but it's aways good to know why it's doing it.
 
 ## File Anatomy
+
 Let's delve a little deeper into the anatomy of an ACH file. ACH files were originally created when punch-card computers were the "rave", so don't consider ACH files cutting-edge technology. They aren't. But they do provide a means by which to move money from one bank account to another--the entire purpose of the ACH network. As aforementioned, each ACH file has several sections known as "records". These are as follows:
 
     File header
@@ -73,11 +76,11 @@ To create a file:
 
 ```js
 var file = new nach.File({
-    immediateDestination: '081000032',
-    immediateOrigin: '123456789',
-    immediateDestinationName: 'Some Bank',
-    immediateOriginName: 'Your Company Inc',
-    referenceCode: '#A000001',
+  immediateDestination: "081000032",
+  immediateOrigin: "123456789",
+  immediateDestinationName: "Some Bank",
+  immediateOriginName: "Your Company Inc",
+  referenceCode: "#A000001",
 });
 ```
 
@@ -85,14 +88,16 @@ To create a batch
 
 ```js
 var batch = new nach.Batch({
-    serviceClassCode: '220',
-    companyName: 'Your Company Inc',
-    standardEntryClassCode: 'WEB',
-    companyIdentification: '123456789',
-    companyEntryDescription: 'Trans Description',
-    companyDescriptiveDate: moment(nach.Utils.computeBusinessDay(8)).format('MMM D'),
-    effectiveEntryDate: nach.Utils.computeBusinessDay(8),
-    originatingDFI: '081000032'
+  serviceClassCode: "220",
+  companyName: "Your Company Inc",
+  standardEntryClassCode: "WEB",
+  companyIdentification: "123456789",
+  companyEntryDescription: "Trans Description",
+  companyDescriptiveDate: moment(nach.Utils.computeBusinessDay(8)).format(
+    "MMM D",
+  ),
+  effectiveEntryDate: nach.Utils.computeBusinessDay(8),
+  originatingDFI: "081000032",
 });
 ```
 
@@ -100,13 +105,13 @@ To create an entry
 
 ```js
 var entry = new nach.Entry({
-    receivingDFI: '081000210',
-    DFIAccount: '5654221',
-    amount: '175',
-    idNumber: 'RAj##32b1kn1bb3',
-    individualName: 'Luke Skywalker',
-    discretionaryData: 'A1',
-    transactionCode: '22'
+  receivingDFI: "081000210",
+  DFIAccount: "5654221",
+  amount: "175",
+  idNumber: "RAj##32b1kn1bb3",
+  individualName: "Luke Skywalker",
+  discretionaryData: "A1",
+  transactionCode: "22",
 });
 ```
 
@@ -114,7 +119,8 @@ To add one or more optional addenda records to an entry
 
 ```js
 var addenda = new nach.EntryAddenda({
-    paymentRelatedInformation: "0123456789ABCDEFGJIJKLMNOPQRSTUVWXYXabcdefgjijklmnopqrstuvwxyx"
+  paymentRelatedInformation:
+    "0123456789ABCDEFGJIJKLMNOPQRSTUVWXYXabcdefgjijklmnopqrstuvwxyx",
 });
 entry.addAddenda(addenda);
 ```
@@ -135,28 +141,28 @@ Finally to generate the file & write it to a text file
 
 ```js
 // Generate the file (result is a string with the file contents)
-file.generateFile(function(err, result) {
+file.generateFile(function (err, result) {
+  // Write result to a NACHA.txt file
+  fs.writeFile("NACHA.txt", result, function (err) {
+    if (err) console.log(err);
 
-    // Write result to a NACHA.txt file
-    fs.writeFile('NACHA.txt', result, function(err) {
-        if(err) console.log(err);
-
-        // Log the output
-        console.log(fileString);
-    });
+    // Log the output
+    console.log(fileString);
+  });
 });
 ```
 
-Or you can use internal write method  
+Or you can use internal write method
 
 ```js
 // Generate the file (result is a string with the file contents)
-file.writeFile('./nach.txt', function(err) {
-    console.log('File writed');
+file.writeFile("./nach.txt", function (err) {
+  console.log("File writed");
 });
 ```
 
 ## Tests
+
 Test coverage is currently a work in progress. To run:
 
     $ npm test
