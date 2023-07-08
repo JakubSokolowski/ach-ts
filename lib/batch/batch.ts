@@ -17,10 +17,9 @@ import { batchControl } from "./control";
 
 import * as moment from "moment";
 
-import * as  _ from "lodash";
+import * as _ from "lodash";
 
-import * as async from "async"
-
+import * as async from "async";
 
 const highLevelHeaderOverrides = [
   "serviceClassCode",
@@ -147,7 +146,7 @@ export class Batch {
           );
         }
       },
-       (err) => {
+      (err) => {
         this.control.totalCredit.value = totalCredit;
         this.control.totalDebit.value = totalDebit;
         this.control.entryHash.value = entryHash.toString().slice(-10);

@@ -167,7 +167,7 @@ export class NachaFile {
 
             done3();
           },
-          err => {
+          (err) => {
             // Only iterate and generate the batch if there is at least one entry in the batch
             if (batch._entries.length > 0) {
               // Increment the addendaCount of the batch
@@ -187,7 +187,7 @@ export class NachaFile {
           },
         );
       },
-      err => {
+      (err) => {
         this.control.totalDebit.value = totalDebit;
         this.control.totalCredit.value = totalCredit;
 
@@ -215,14 +215,14 @@ export class NachaFile {
   }
 
   generateFile(cb) {
-    return new Promise(resolve => {
-      this.generateHeader(headerString => {
+    return new Promise((resolve) => {
+      this.generateHeader((headerString) => {
         this.generateBatches((batchString, rows) => {
-          this.generateControl(controlString => {
+          this.generateControl((controlString) => {
             // These must be within this callback otherwise rows won't be calculated yet
             const paddedRows = getNextMultipleDiff(rows, 10);
 
-            this.generatePaddedRows(paddedRows, paddedString => {
+            this.generatePaddedRows(paddedRows, (paddedString) => {
               const str =
                 headerString +
                 newLineChar() +
@@ -245,7 +245,7 @@ export class NachaFile {
           cb && cb(err);
           reject(err);
         } else {
-          fs.writeFile(path, str, err => {
+          fs.writeFile(path, str, (err) => {
             if (err) {
               cb && cb(err);
               reject(err);

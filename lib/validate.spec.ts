@@ -74,9 +74,7 @@ describe("Validate", function () {
       // The function should throw an error since the field's value exceeds its width.
       expect(function () {
         validateLengths(testObjectOne);
-      }).toThrow(
-        "fieldOne's length is 7, but it should be no greater than 6.",
-      );
+      }).toThrow("fieldOne's length is 7, but it should be no greater than 6.");
 
       // Change the field's value to a string within the field's maximum width.
       testObjectOne.fieldOne.value = "isokay";
