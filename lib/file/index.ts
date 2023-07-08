@@ -1,1 +1,1 @@
-export {NachaFile} from './nacha-file'
+export { NachaFile } from "./nacha-file";
