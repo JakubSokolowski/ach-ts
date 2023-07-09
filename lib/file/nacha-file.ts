@@ -203,7 +203,7 @@ export class NachaFile {
     return generateStringSync(this.control);
   }
 
-  generateFile(cb): Promise<string> {
+  generateFile(): Promise<string> {
     return new Promise((resolve) => {
       const headerString = this.generateHeader();
       const [batchString, rows] = this.generateBatches();
@@ -218,62 +218,53 @@ export class NachaFile {
         batchString +
         controlString +
         paddedString;
-      cb && cb(undefined, str);
       resolve(str);
     });
   }
 
-  writeFile(path, cb) {
+  writeFile(path: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.generateFile((err, str) => {
-        if (err) {
-          cb && cb(err);
-          reject(err);
-        } else {
-          fs.writeFile(path, str, (err) => {
-            if (err) {
-              cb && cb(err);
-              reject(err);
-            } else {
-              cb && cb(undefined, str);
-              resolve(str);
-            }
-          });
-        }
+      this.generateFile().then((str) => {
+        fs.writeFile(path, str, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
       });
     });
   }
 
-  static parseFile(filePath, cb?: (err: any, file?: NachaFile) => void) {
+  static parseFile(filePath): Promise<NachaFile> {
     return new Promise((resolve, reject) => {
       fs.readFile(filePath, (err, data) => {
         if (err) {
           reject(err);
-          return cb && cb(err);
         }
-        resolve(NachaFile.parse(data.toString(), cb));
+        resolve(NachaFile.parse(data.toString()));
       });
     });
   }
 
-  static parse(str, cb?: (err: any, file?: any) => void) {
-    return new Promise(function (resolve, reject) {
-      if (!str || !str.length) {
+  static parse(inputStr: string): Promise<NachaFile> {
+    return new Promise((resolve, reject) => {
+      if (!inputStr || !inputStr.length) {
         reject("Input string is empty");
-        return cb && cb("Input string is empty");
+        return;
       }
-      let lines = str.split("\n");
+      let lines = inputStr.split("\n");
       if (lines.length <= 1) {
         lines = [];
-        for (let i = 0; i < str.length; i += 94) {
-          lines.push(str.substr(i, 94));
+        for (let i = 0; i < inputStr.length; i += 94) {
+          lines.push(inputStr.substr(i, 94));
         }
       }
       const file: Record<string, any> = {};
       const batches = [];
       let batchIndex = 0;
       let hasAddenda = false;
-      lines.forEach(function (line) {
+      lines.forEach((line) => {
         if (!line || !line.length) {
           return;
         }
@@ -312,11 +303,10 @@ export class NachaFile {
       });
       if (!file.header || !file.control) {
         reject("File records parse error");
-        return cb && cb("File records parse error");
       }
       if (!batches || batches.length === 0) {
         reject("No batches found");
-        return cb && cb("No batches found");
+        return;
       }
       try {
         let nachFile;
@@ -326,18 +316,16 @@ export class NachaFile {
           nachFile = new NachaFile(file.header, false);
         }
 
-        batches.forEach(function (batchOb) {
+        batches.forEach((batchOb) => {
           const batch = new Batch(batchOb.header);
-          batchOb.entry.forEach(function (entry) {
+          batchOb.entry.forEach((entry) => {
             batch.addEntry(entry);
           });
           nachFile.addBatch(batch);
         });
-        cb && cb(undefined, nachFile);
         resolve(nachFile);
       } catch (e) {
         reject(e);
-        return cb && cb(e);
       }
     });
   }
