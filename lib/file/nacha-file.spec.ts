@@ -4,8 +4,11 @@ import { Entry } from "../entry";
 import { Batch } from "../batch";
 import * as fs from "fs";
 import * as moment from "moment";
+import { Field } from "../models";
 
-const exampleHeader = {
+import * as Headers from "../file/header";
+
+const exampleHeader: Record<string, Field> = {
   recordTypeCode: {
     name: "Record Type Code",
     width: 1,
@@ -114,12 +117,11 @@ const exampleHeader = {
   },
 };
 
-jest.mock("../file/header", () => ({
-  ...jest.requireActual("../file/header"),
-  generateFileHeader: () => exampleHeader,
-}));
-
 describe("NachaFile", function () {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe("Parse", function () {
     it("should parse successfully", function (done) {
       NachaFile.parseFile(
@@ -179,17 +181,37 @@ describe("NachaFile", function () {
         });
     });
 
-    it("should generate file with proper content", (done) => {
-      // given
+    it("should generate proper header", () => {
+      // give
+      jest.spyOn(Headers, "generateFileHeader").mockReturnValue(exampleHeader);
+
       const file = new NachaFile({
         immediateDestination: "081000032",
         immediateOrigin: "123456789",
         immediateDestinationName: "Some Bank",
         immediateOriginName: "Your Company Inc",
         referenceCode: "#A000001",
-        headers: {
-          ...exampleHeader,
-        },
+      });
+
+      // when
+      const header = file.generateHeader();
+
+      // then
+      const expectedHeader =
+        "101 081000032 1234567892307082210A094101Some Bank              Your Company Inc       #A000001";
+      expect(header).toEqual(expectedHeader);
+    });
+
+    it("should generate file with proper content", (done) => {
+      // given
+      jest.spyOn(Headers, "generateFileHeader").mockReturnValue(exampleHeader);
+
+      const file = new NachaFile({
+        immediateDestination: "081000032",
+        immediateOrigin: "123456789",
+        immediateDestinationName: "Some Bank",
+        immediateOriginName: "Your Company Inc",
+        referenceCode: "#A000001",
       });
 
       const date = moment("2023-07-08").format("MMM D");

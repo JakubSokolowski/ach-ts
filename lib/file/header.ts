@@ -1,7 +1,8 @@
 // The date/time defaults are dynamic, so always create a new object
 import { formatDate, formatTime } from "../utils";
+import { Field } from "../models";
 
-export function generateFileHeader() {
+export function generateFileHeader(): Record<string, Field> {
   return {
     recordTypeCode: {
       name: "Record Type Code",

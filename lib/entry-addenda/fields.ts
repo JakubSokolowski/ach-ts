@@ -1,4 +1,15 @@
-export const entryAddendaFields = {
+/* eslint-disable @typescript-eslint/ban-types */
+import { Field } from "../models";
+
+export type EntryAddendaFieldNames =
+  | "recordTypeCode"
+  | "addendaTypeCode"
+  | "paymentRelatedInformation"
+  | "addendaSequenceNumber"
+  | "entryDetailSequenceNumber"
+  | (string & {});
+
+export const entryAddendaFields: Record<EntryAddendaFieldNames, Field> = {
   recordTypeCode: {
     name: "Record Type Code",
     width: 1,

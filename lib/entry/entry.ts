@@ -1,6 +1,10 @@
 import * as _ from "lodash";
 import { entryFields } from "./fields";
-import { computeCheckDigit, generateString, overrideLowLevel } from "../utils";
+import {
+  computeCheckDigit,
+  generateStringSync,
+  overrideLowLevel,
+} from "../utils";
 import {
   validateACHAddendaCode,
   validateACHCode,
@@ -9,8 +13,8 @@ import {
   validateRequiredFields,
   validateRoutingNumber,
 } from "../validate";
+import { EntryAddenda } from "../entry-addenda";
 
-import * as async from "async";
 export const highLevelOverrides = [
   "transactionCode",
   "receivingDFI",
@@ -25,7 +29,7 @@ export const highLevelOverrides = [
 ];
 
 export class Entry {
-  _addendas: any[] = [];
+  addenda: EntryAddenda[] = [];
   fields: any;
 
   constructor(options: any, autoValidate?: boolean) {
@@ -83,35 +87,29 @@ export class Entry {
     this.set("addendaId", "1");
 
     // Set corresponding feilds on Addenda
-    entryAddenda.set("addendaSequenceNumber", this._addendas.length + 1);
+    entryAddenda.set("addendaSequenceNumber", this.addenda.length + 1);
     entryAddenda.set("entryDetailSequenceNumber", this.get("traceNumber"));
 
     // Add the new entryAddenda to the addendas array
-    this._addendas.push(entryAddenda);
+    this.addenda.push(entryAddenda);
   }
 
   getAddendas() {
-    return this._addendas;
+    return this.addenda;
   }
 
   getRecordCount() {
-    return 1 + this._addendas.length;
+    return 1 + this.addenda.length;
   }
 
-  generateString(cb) {
-    async.map(
-      this._addendas,
-      (entryAddenda, done) => {
-        generateString(entryAddenda.fields, function (string) {
-          done(null, string);
-        });
-      },
-      (err, addendaStrings) => {
-        generateString(this.fields, function (string) {
-          cb([string].concat(addendaStrings).join("\n"));
-        });
-      },
-    );
+  generateString(): string {
+    const addends = this.addenda.map((entryAddenda) => {
+      return entryAddenda.generateString();
+    });
+
+    const fieldsString = generateStringSync(this.fields);
+
+    return [fieldsString].concat(addends).join("\n");
   }
 
   _validate() {
