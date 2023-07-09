@@ -117,68 +117,61 @@ const exampleHeader: Record<string, Field> = {
   },
 };
 
-describe("NachaFile", function () {
+describe("NachaFile", () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe("Parse", function () {
-    it("should parse successfully", function (done) {
-      NachaFile.parseFile(
+  describe("Parse", () => {
+    it("should parse successfully", async () => {
+      // when
+      const file = await NachaFile.parseFile(
         __dirname + "/mocks/nach-valid.txt",
-        function (err, file) {
-          if (err) throw err;
-          expect(file).toBeDefined();
-          done();
-        },
       );
+
+      // then
+      expect(file).toBeDefined();
     });
 
-    it("should parse Addenda successfully", function (done) {
-      NachaFile.parseFile(
+    it("should parse Addenda successfully", async () => {
+      // when
+      const file = await NachaFile.parseFile(
         __dirname + "/mocks/nach-valid-addenda.txt",
-        function (err, file: any) {
-          if (err) throw err;
-          expect(file).toBeDefined();
-          file.getBatches().forEach((batch) => {
-            batch.getEntries().forEach((entry) => {
-              entry.getAddendas().forEach((addenda) => {
-                expect(addenda.getReturnCode()).toEqual("R14");
-              });
-            });
-          });
-          expect(file).toBeDefined();
-          done();
-        },
       );
+
+      // then
+      expect(file).toBeDefined();
+      file.getBatches().forEach((batch) => {
+        batch.getEntries().forEach((entry) => {
+          entry.getAddendas().forEach((addenda) => {
+            expect(addenda.getReturnCode()).toEqual("R14");
+          });
+        });
+      });
     });
 
-    it("should parse Addenda successfully with promise", function (done) {
-      NachaFile.parseFile(__dirname + "/mocks/nach-valid-addenda.txt")
-        .then((file) => {
-          expect(file).toBeDefined();
-          done();
-        })
-        .catch((err) => {
-          throw err;
-        });
+    it("should parse Addenda successfully with promise", async () => {
+      // when
+      const file = await NachaFile.parseFile(
+        __dirname + "/mocks/nach-valid-addenda.txt",
+      );
+
+      // then
+      expect(file).toBeDefined();
     });
   });
 
   describe("Generate", function () {
-    it("should generate file successfully", function (done) {
-      NachaFile.parseFile(__dirname + "/mocks/nach-valid.txt")
-        .then((file: NachaFile) => {
-          expect(file).toBeDefined();
-          file.generateFile((err, str) => {
-            expect(err).toBeUndefined();
-            expect(str).toBeDefined();
-            done();
-          });
-        })
-        .catch((err) => {
-          throw err;
-        });
+    it("should generate file successfully", async () => {
+      // when
+      const file = await NachaFile.parseFile(
+        __dirname + "/mocks/nach-valid.txt",
+      );
+
+      // then
+      expect(file).toBeDefined();
+      const str = await file.generateFile();
+      expect(str).toBeDefined();
     });
 
     it("should generate proper header", () => {
@@ -202,7 +195,7 @@ describe("NachaFile", function () {
       expect(header).toEqual(expectedHeader);
     });
 
-    it("should generate file with proper content", (done) => {
+    it("should generate file with proper content", async () => {
       // given
       jest.spyOn(Headers, "generateFileHeader").mockReturnValue(exampleHeader);
 
@@ -247,22 +240,22 @@ describe("NachaFile", function () {
       file.addBatch(batch);
 
       // when
-      const expected = fs
+      const generated = await file.generateFile();
+      const generatedLines = generated.split("\n");
+
+      // then
+      const expectedLines = fs
         .readFileSync(__dirname + "/mocks/canonical.ach")
         .toString()
         .split("\n");
 
-      file.generateFile((err, generated) => {
-        const generatedLines = generated.split("\n");
-        expect(generatedLines.length).toEqual(expected.length);
-        for (let i = 0; i < generatedLines.length; i++) {
-          // There seems to be an issue when some line has some different
-          // line ending or something. Workaround for now is to split lines,
-          // trim them and compare them individually.
-          expect(generatedLines[i].trim()).toEqual(expected[i].trim());
-        }
-        done();
-      });
+      expect(generatedLines.length).toEqual(expectedLines.length);
+      for (let i = 0; i < generatedLines.length; i++) {
+        // There seems to be an issue when some line has some different
+        // line ending or something. Workaround for now is to split lines,
+        // trim them and compare them individually.
+        expect(generatedLines[i].trim()).toEqual(expectedLines[i].trim());
+      }
     });
   });
 });

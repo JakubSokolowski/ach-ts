@@ -2,8 +2,19 @@
   "compilerOptions": {
     "outDir": "./dist",
     "target": "es5",
-    "declaration": true
+    "declaration": true,
+    "types": [
+      "jest",
+      "node"
+    ]
   },
-  "include": ["./lib/**/*", "./test/**/*", "index.ts"],
-  "exclude": ["node_modules", "**/*.spec.ts"]
+  "include": [
+    "./lib/**/*",
+    "./test/**/*",
+    "index.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
+  ]
 }
