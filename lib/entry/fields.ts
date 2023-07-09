@@ -1,4 +1,20 @@
-export const entryFields = {
+import { Field } from "../models";
+
+export type EntryFieldNames =
+  | "recordTypeCode"
+  | "transactionCode"
+  | "receivingDFI"
+  | "checkDigit"
+  | "DFIAccount"
+  | "amount"
+  | "idNumber"
+  | "individualName"
+  | "discretionaryData"
+  | "addendaId"
+  | "traceNumber"
+  | (object & string);
+
+export const entryFields: Record<EntryFieldNames, Field> = {
   recordTypeCode: {
     name: "Record Type Code",
     width: 1,

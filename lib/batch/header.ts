@@ -1,4 +1,21 @@
-export const batchHeader = {
+import { Field } from "../models";
+
+export type BatchHeaderFieldNames =
+  | "recordTypeCode"
+  | "serviceClassCode"
+  | "companyName"
+  | "companyDiscretionaryData"
+  | "companyIdentification"
+  | "standardEntryClassCode"
+  | "companyEntryDescription"
+  | "companyDescriptiveDate"
+  | "effectiveEntryDate"
+  | "settlementDate"
+  | "originatorStatusCode"
+  | "originatingDFI"
+  | "batchNumber";
+
+export const batchHeader: Record<BatchHeaderFieldNames, Field> = {
   recordTypeCode: {
     name: "Record Type Code",
     width: 1,

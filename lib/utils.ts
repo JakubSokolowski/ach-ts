@@ -3,15 +3,19 @@
 import * as _ from "lodash";
 import * as moment from "moment";
 import { nACHError } from "./error";
-
-let counter = 0;
+import { Field } from "./models";
 
 // Pad a given string to a fixed width using any character or number (defaults to one blank space)
 // Both a string and width are required params for this function, but it also takes two optional
 // parameters. First, a boolean called 'padRight' which by default is true. This means padding
 // will be applied to the right side of the string. Setting this to false will pad the left side of the
 // string. You can also specify the character you want to use to pad the string.
-export function pad(initialStr, width, blank?, blank2?) {
+export function pad(
+  initialStr: string,
+  width: number,
+  blank?: string | boolean,
+  blank2?: string | boolean,
+): string {
   let padRight;
   let padChar;
   let result;
@@ -36,7 +40,7 @@ export function pad(initialStr, width, blank?, blank2?) {
   }
 }
 
-export function computeCheckDigit(routing) {
+export function computeCheckDigit(routing: string): string {
   const a = routing.split("").map(Number);
 
   return a.length !== 8
@@ -49,10 +53,12 @@ export function computeCheckDigit(routing) {
 }
 
 // This function is passed a field and a regex and tests the field's value property against the given regex
-export function testRegex(regex, field) {
+export function testRegex(regex: RegExp, field: Field): boolean {
   const string = field.number
-    ? parseFloat(field.value).toFixed(2).replace(/\./, "")
-    : field.value;
+    ? parseFloat(field.value as string)
+        .toFixed(2)
+        .replace(/\./, "")
+    : (field.value as string);
   if (!regex.test(string)) {
     throw new nACHError({
       name: "Invalid Data Type",
@@ -69,22 +75,34 @@ export function testRegex(regex, field) {
 
 // This function iterates through the object passed in and checks to see if it has a "position" property. If so, we pad it, and then concatentate it where belongs.
 
-export function generateString(object, cb?: (result: any) => void) {
+export function generateString(
+  object: Record<string, Field>,
+  cb?: (result: any) => void,
+) {
+  const result = generateStringSync(object);
+  if (cb) {
+    cb(result);
+  }
+}
+
+export function generateStringSync(fields: Record<string, Field>): string {
   let counter = 1;
   let result = "";
 
   // How does this actually work? It doens't seem like this is enough protection from iterating infinitely.
-  const objectCount = _.size(object);
+  const objectCount = _.size(fields);
 
   while (counter < objectCount) {
-    _.forEach(object, function (field) {
+    _.forEach(fields, (field: Field) => {
       if (field.position === counter) {
         if (field.blank === true || field.type == "alphanumeric") {
-          result = result + pad(field.value, field.width);
+          result = result + pad(field.value as string, field.width);
         } else {
           const string = field.number
-            ? parseFloat(field.value).toFixed(2).replace(/\./, "")
-            : field.value;
+            ? parseFloat(field.value as string)
+                .toFixed(2)
+                .replace(/\./, "")
+            : (field.value as string);
           const paddingChar = field.paddingChar || "0";
           result = result + pad(string, field.width, false, paddingChar);
         }
@@ -92,13 +110,14 @@ export function generateString(object, cb?: (result: any) => void) {
       }
     });
   }
-  if (cb) {
-    cb(result);
-  }
+  return result;
 }
 
-export function parseLine(str, object) {
-  const result = {};
+export function parseLine(
+  str: string,
+  object: Record<string, Field>,
+): Record<string, string> {
+  const result: Record<string, string> = {};
   let pos = 0;
   Object.keys(object).forEach((key) => {
     const field = object[key];
@@ -108,26 +127,26 @@ export function parseLine(str, object) {
   return result;
 }
 
-function unique() {
-  return counter++;
-}
-
-export function overrideLowLevel(values, options, self) {
+export function overrideLowLevel(
+  values: string[],
+  options: Record<string, Field>,
+  self: { set: (field: string, value: Field) => void },
+) {
   // For each override value, check to see if it exists on the options object & if so, set it
-  _.forEach(values, function (field) {
+  _.forEach(values, (field) => {
     if (options[field]) {
       self.set(field, options[field]);
     }
   });
 }
 
-export function getNextMultiple(value, multiple) {
+export function getNextMultiple(value: number, multiple: number): number {
   return value % multiple == 0
     ? value
     : value + (multiple - (value % multiple));
 }
 
-export function getNextMultipleDiff(value, multiple) {
+export function getNextMultipleDiff(value: number, multiple: number): number {
   return getNextMultiple(value, multiple) - value;
 }
 
@@ -141,35 +160,34 @@ export const formatDate = function (date) {
 };
 
 // Create a valid timestamp used by the ACH system in the HHMM format
-export const formatTime = function (date) {
+export function formatTime(date: Date) {
   const hour = date.getHours().toString();
   const minute = date.getMinutes().toString();
 
   return pad(hour, 2, false, "0") + pad(minute, 2, false, "0");
-};
+}
 
-export const isBusinessDay = (module.exports.isBusinessDay = function (day) {
+export function isBusinessDay(day) {
   const d = moment(day).day();
   return !!(d !== 0 && d !== 6);
-});
+}
 
 // This function takes an optional starting date to iterate from based
-export const computeBusinessDay = (module.exports.computeBusinessDay =
-  function (businessDays, ...args): Date {
-    const day = args[0] ? moment(args[0]) : moment();
-    let counter = 0;
+export function computeBusinessDay(businessDays, ...args): Date {
+  const day = args[0] ? moment(args[0]) : moment();
+  let counter = 0;
 
-    function addDays() {
-      day.add(1, "days");
-      if (isBusinessDay(day)) {
-        counter++;
-      }
-      return counter === businessDays ? day.toDate() : addDays();
+  function addDays() {
+    day.add(1, "days");
+    if (isBusinessDay(day)) {
+      counter++;
     }
+    return counter === businessDays ? day.toDate() : addDays();
+  }
 
-    return addDays();
-  });
+  return addDays();
+}
 
-export const newLineChar = function () {
+export function newLineChar() {
   return "\r\n";
-};
+}

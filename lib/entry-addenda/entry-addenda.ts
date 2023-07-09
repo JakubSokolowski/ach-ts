@@ -1,6 +1,6 @@
 // Entry
 
-import { generateString, overrideLowLevel } from "../utils";
+import { generateStringSync, overrideLowLevel } from "../utils";
 import {
   validateACHAddendaTypeCode,
   validateDataTypes,
@@ -65,10 +65,8 @@ export class EntryAddenda {
     }
   }
 
-  generateString(cb: (string: string) => void) {
-    generateString(this.fields, function (string: string) {
-      cb(string);
-    });
+  generateString(): string {
+    return generateStringSync(this.fields);
   }
 
   _validate() {

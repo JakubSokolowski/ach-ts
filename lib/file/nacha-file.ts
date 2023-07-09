@@ -3,7 +3,7 @@ import { generateFileHeader } from "./header";
 import { fileControl } from "./control";
 import {
   computeCheckDigit,
-  generateString,
+  generateStringSync,
   getNextMultiple,
   getNextMultipleDiff,
   newLineChar,
@@ -16,8 +16,7 @@ import * as fs from "fs";
 import { Batch, batchControl, batchHeader } from "../batch";
 import { Entry, entryFields } from "../entry";
 import { EntryAddenda, entryAddendaFields } from "../entry-addenda";
-
-import * as async from "async";
+import { Field } from "../models";
 
 export const highLevelOverrides = [
   "immediateDestination",
@@ -30,15 +29,27 @@ export const highLevelOverrides = [
   "referenceCode",
 ];
 
+export type NachaFileOptions = {
+  header?: Record<string, Field>;
+  control?: Record<string, Field>;
+  immediateDestination?: string;
+  immediateOrigin?: string;
+  immediateDestinationName?: string;
+  immediateOriginName?: string;
+  referenceCode?: string;
+
+  batchSequenceNumber?: number;
+};
+
 export class NachaFile {
-  _batches: any[];
-  header: any;
-  control: any;
+  batches: Batch[];
+  header: Record<string, Field>;
+  control: Record<string, Field>;
 
   _batchSequenceNumber: number;
 
-  constructor(options, autoValidate = false) {
-    this._batches = [];
+  constructor(options: NachaFileOptions, autoValidate = false) {
+    this.batches = [];
 
     // Allow the batch header/control defaults to be overriden if provided
     this.header = options.header
@@ -49,7 +60,7 @@ export class NachaFile {
       : _.cloneDeep(fileControl);
 
     // Configure high-level overrides (these override the low-level settings if provided)
-    overrideLowLevel(highLevelOverrides, options, this);
+    overrideLowLevel(highLevelOverrides, options as any, this);
 
     // This is done to make sure we have a 9-digit routing number
     if (options.immediateDestination) {
@@ -62,11 +73,11 @@ export class NachaFile {
 
     if (autoValidate !== false) {
       // Validate all values
-      this._validate();
+      this.validate();
     }
   }
 
-  _validate() {
+  validate(): void {
     // Validate header field lengths
     validateLengths(this.header);
 
@@ -80,7 +91,7 @@ export class NachaFile {
     validateDataTypes(this.control);
   }
 
-  get(field) {
+  get(field: string): string | number {
     // If the header has the field, return the value
     if (this.header[field]) {
       return this.header[field].value;
@@ -106,7 +117,7 @@ export class NachaFile {
     }
   }
 
-  addBatch(batch) {
+  addBatch(batch: Batch): void {
     // Set the batch number on the header and control records
     batch.header.batchNumber.value = this._batchSequenceNumber;
     batch.control.batchNumber.value = this._batchSequenceNumber;
@@ -114,14 +125,14 @@ export class NachaFile {
     // Increment the batchSequenceNumber
     ++this._batchSequenceNumber;
 
-    this._batches.push(batch);
+    this.batches.push(batch);
   }
 
-  getBatches() {
-    return this._batches;
+  getBatches(): Batch[] {
+    return this.batches;
   }
 
-  generatePaddedRows(rows, cb) {
+  generatePaddedRows(rows: number): string {
     let paddedRows = "";
 
     for (let i = 0; i < rows; i++) {
@@ -129,10 +140,10 @@ export class NachaFile {
     }
 
     // Return control flow back by calling the callback function
-    cb(paddedRows);
+    return paddedRows;
   }
 
-  generateBatches(done1) {
+  generateBatches(): [string, number] {
     let result = "";
     let rows = 2;
 
@@ -142,96 +153,73 @@ export class NachaFile {
     let totalDebit = 0;
     let totalCredit = 0;
 
-    async.each(
-      this._batches,
-      (batch, done2) => {
-        totalDebit += batch.control.totalDebit.value;
-        totalCredit += batch.control.totalCredit.value;
+    this.batches.forEach((batch: Batch) => {
+      totalDebit += batch.control.totalDebit.value as number;
+      totalCredit += batch.control.totalCredit.value as number;
 
-        async.each(
-          batch._entries,
-          (entry, done3) => {
-            entry.fields.traceNumber.value = entry.fields.traceNumber.value
-              ? entry.fields.traceNumber.value
-              : this.header.immediateOrigin.value.slice(0, 8) +
-                pad(addendaCount, 7, false, "0");
-            entryHash += Number(entry.fields.receivingDFI.value);
+      batch.getEntries().forEach((entry: Entry) => {
+        entry.fields.traceNumber.value = entry.fields.traceNumber.value
+          ? entry.fields.traceNumber.value
+          : (this.header.immediateOrigin.value as string).slice(0, 8) +
+            pad(addendaCount.toString(), 7, false, "0");
+        entryHash += Number(entry.fields.receivingDFI.value);
 
-            // Increment the addenda and block count
-            addendaCount++;
-            rows++;
+        // Increment the addenda and block count
+        addendaCount++;
+        rows++;
+      });
 
-            done3();
-          },
-          (err) => {
-            // Only iterate and generate the batch if there is at least one entry in the batch
-            if (batch._entries.length > 0) {
-              // Increment the addendaCount of the batch
-              this.control.batchCount.value++;
+      if (batch.getEntries().length > 0) {
+        // Increment the addendaCount of the batch
+        (this.control.batchCount.value as number)++;
 
-              // Bump the number of rows only for batches with at least one entry
-              rows = rows + 2;
+        // Bump the number of rows only for batches with at least one entry
+        rows = rows + 2;
 
-              // Generate the batch after we've added the trace numbers
-              batch.generateString(function (batchString) {
-                result += batchString + newLineChar();
-                done2();
-              });
-            } else {
-              done2();
-            }
-          },
-        );
-      },
-      (err) => {
-        this.control.totalDebit.value = totalDebit;
-        this.control.totalCredit.value = totalCredit;
+        // Generate the batch after we've added the trace numbers
+        const batchString = batch.generateString();
+        result += batchString + newLineChar();
+      }
+    });
 
-        this.control.addendaCount.value = addendaCount;
-        this.control.blockCount.value = getNextMultiple(rows, 10) / 10;
+    this.control.totalDebit.value = totalDebit;
+    this.control.totalCredit.value = totalCredit;
 
-        // Slice the 10 rightmost digits.
-        this.control.entryHash.value = entryHash.toString().slice(-10);
+    this.control.addendaCount.value = addendaCount;
+    this.control.blockCount.value = getNextMultiple(rows, 10) / 10;
 
-        // Pass the result string as well as the number of rows back
-        done1(result, rows);
-      },
-    );
+    // Slice the 10 rightmost digits.
+    this.control.entryHash.value = entryHash.toString().slice(-10);
+
+    // Return control flow back by calling the callback function
+    return [result, rows];
   }
 
-  generateHeader(cb) {
-    generateString(this.header, function (string) {
-      cb(string);
-    });
+  generateHeader(): string {
+    return generateStringSync(this.header);
   }
 
-  generateControl(cb) {
-    generateString(this.control, function (string) {
-      cb(string);
-    });
+  generateControl() {
+    return generateStringSync(this.control);
   }
 
   generateFile(cb): Promise<string> {
     return new Promise((resolve) => {
-      this.generateHeader((headerString) => {
-        this.generateBatches((batchString, rows) => {
-          this.generateControl((controlString) => {
-            // These must be within this callback otherwise rows won't be calculated yet
-            const paddedRows = getNextMultipleDiff(rows, 10);
+      const headerString = this.generateHeader();
+      const [batchString, rows] = this.generateBatches();
 
-            this.generatePaddedRows(paddedRows, (paddedString) => {
-              const str =
-                headerString +
-                newLineChar() +
-                batchString +
-                controlString +
-                paddedString;
-              cb && cb(undefined, str);
-              resolve(str);
-            });
-          });
-        });
-      });
+      const controlString = this.generateControl();
+      const numPaddedRows = getNextMultipleDiff(rows, 10);
+
+      const paddedString = this.generatePaddedRows(numPaddedRows);
+      const str =
+        headerString +
+        newLineChar() +
+        batchString +
+        controlString +
+        paddedString;
+      cb && cb(undefined, str);
+      resolve(str);
     });
   }
 

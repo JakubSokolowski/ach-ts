@@ -1,7 +1,7 @@
 import {
   computeCheckDigit,
   formatDate,
-  generateString,
+  generateStringSync,
   newLineChar,
   overrideLowLevel,
 } from "../utils";
@@ -18,8 +18,8 @@ import { batchControl } from "./control";
 import * as moment from "moment";
 
 import * as _ from "lodash";
-
-import * as async from "async";
+import { Entry } from "../entry";
+import { Field } from "../models";
 
 const highLevelHeaderOverrides = [
   "serviceClassCode",
@@ -27,6 +27,7 @@ const highLevelHeaderOverrides = [
   "companyIdentification",
   "standardEntryClassCode",
 ];
+
 const highLevelControlOverrides = [
   "addendaCount",
   "entryHash",
@@ -34,14 +35,28 @@ const highLevelControlOverrides = [
   "totalCredit",
 ];
 
+export type BatchOptions = {
+  header?: Record<string, Field>;
+  control?: Record<string, Field>;
+  originatingDFI?: string;
+  companyName?: string;
+  companyEntryDescription?: string;
+  companyDescriptiveDate?: string;
+  serviceClassCode?: string;
+  companyDiscretionaryData?: string;
+  companyIdentification?: string;
+  standardEntryClassCode?: string;
+  effectiveEntryDate?: Date | string;
+};
+
 export class Batch {
-  private _entries: any[];
+  private readonly entries: Entry[];
 
-  public header: any;
-  public control: any;
+  public header: Record<string, Field>;
+  public control: Record<string, Field>;
 
-  constructor(options: any, autoValidate = true) {
-    this._entries = [];
+  constructor(options: BatchOptions, autoValidate = true) {
+    this.entries = [];
 
     this.header = options.header
       ? _.merge(options.header, batchHeader, _.defaults)
@@ -50,8 +65,8 @@ export class Batch {
       ? _.merge(options.header, batchControl, _.defaults)
       : _.cloneDeep(batchControl);
 
-    overrideLowLevel(highLevelHeaderOverrides, options, this);
-    overrideLowLevel(highLevelControlOverrides, options, this);
+    overrideLowLevel(highLevelHeaderOverrides, options as any, this);
+    overrideLowLevel(highLevelControlOverrides, options as any, this);
 
     if (autoValidate !== false) {
       validateRoutingNumber(computeCheckDigit(options.originatingDFI));
@@ -118,9 +133,9 @@ export class Batch {
     validateDataTypes(this.control);
   }
 
-  public addEntry(entry: any) {
-    this.control.addendaCount.value += entry.getRecordCount();
-    this._entries.push(entry);
+  public addEntry(entry: Entry) {
+    (this.control.addendaCount.value as string) += entry.getRecordCount();
+    this.entries.push(entry);
 
     let entryHash = 0;
     let totalDebit = 0;
@@ -129,72 +144,53 @@ export class Batch {
     const creditCodes = ["22", "23", "24", "32", "33", "34"];
     const debitCodes = ["27", "28", "29", "37", "38", "39"];
 
-    async.each(
-      this._entries,
-      (entry, done) => {
-        entryHash += Number(entry.fields.receivingDFI.value);
+    this.entries.forEach((entry) => {
+      entryHash += Number(entry.fields.receivingDFI.value);
 
-        if (_.includes(creditCodes, entry.fields.transactionCode.value)) {
-          totalCredit += entry.fields.amount.value;
-          done();
-        } else if (_.includes(debitCodes, entry.fields.transactionCode.value)) {
-          totalDebit += entry.fields.amount.value;
-          done();
-        } else {
-          console.log(
-            "Transaction codes did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)",
-          );
-        }
-      },
-      (err) => {
-        this.control.totalCredit.value = totalCredit;
-        this.control.totalDebit.value = totalDebit;
-        this.control.entryHash.value = entryHash.toString().slice(-10);
-      },
-    );
+      if (_.includes(creditCodes, entry.fields.transactionCode.value)) {
+        totalCredit += entry.fields.amount.value;
+      } else if (_.includes(debitCodes, entry.fields.transactionCode.value)) {
+        totalDebit += entry.fields.amount.value;
+      } else {
+        console.log(
+          "Transaction codes did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)",
+        );
+      }
+    });
+
+    this.control.totalCredit.value = totalCredit;
+    this.control.totalDebit.value = totalDebit;
+    this.control.entryHash.value = entryHash.toString().slice(-10);
   }
 
   public getEntries() {
-    return this._entries;
+    return this.entries;
   }
 
-  public generateHeader(cb: (string: string) => void) {
-    generateString(this.header, function (string: string) {
-      cb(string);
-    });
+  public generateHeader(): string {
+    return generateStringSync(this.header);
   }
 
-  public generateControl(cb: (string: string) => void) {
-    generateString(this.control, function (string: string) {
-      cb(string);
-    });
+  public generateControl(): string {
+    return generateStringSync(this.control);
   }
 
-  public generateEntries(cb: (string: string) => void) {
+  public generateEntries(): string {
     let result = "";
 
-    async.each(
-      this._entries,
-      function (entry, done) {
-        entry.generateString(function (string: string) {
-          result += string + newLineChar();
-          done();
-        });
-      },
-      function (err) {
-        cb(result);
-      },
-    );
+    this.entries.forEach((entry) => {
+      const entryString = entry.generateString();
+      result += entryString + newLineChar();
+    });
+
+    return result;
   }
 
-  public generateString(cb: (string: string) => void) {
-    this.generateHeader((headerString: string) => {
-      this.generateEntries((entryString: string) => {
-        this.generateControl((controlString: string) => {
-          cb(headerString + newLineChar() + entryString + controlString);
-        });
-      });
-    });
+  public generateString(): string {
+    const headerString = this.generateHeader();
+    const entryString = this.generateEntries();
+    const controlString = this.generateControl();
+    return headerString + newLineChar() + entryString + controlString;
   }
 
   get(field) {

@@ -1,4 +1,6 @@
-export const batchControl = {
+import { Field } from "../models";
+
+export const batchControl: Record<string, Field> = {
   recordTypeCode: {
     name: "Record Type Code",
     width: 1,

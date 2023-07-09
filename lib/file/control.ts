@@ -1,4 +1,6 @@
-export const fileControl = {
+import { Field } from "../models";
+
+export const fileControl: Record<string, Field> = {
   recordTypeCode: {
     name: "Record Type Code",
     width: 1,

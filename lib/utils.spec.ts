@@ -1,11 +1,13 @@
 import { formatDate, formatTime, generateString, pad } from "./utils";
 
 import * as moment from "moment";
+import { Field } from "./models";
+
 describe("Utils", () => {
   describe("pad", () => {
     it("should add pad", () => {
       const testS = "1991";
-      const testW = "0";
+      const testW = 0;
 
       expect(() => {
         pad(testS, testW);
@@ -15,7 +17,7 @@ describe("Utils", () => {
 
   describe("GenerateString", () => {
     it("Test to see if object can be passed", function () {
-      const testObj = {
+      const testObj: Record<string, Field> = {
         testRecord: {
           name: "Record Type Code",
           width: 1,
