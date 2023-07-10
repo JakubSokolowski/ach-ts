@@ -1,8 +1,6 @@
 # NODE-nACH
 
-[![npm](https://img.shields.io/npm/v/nach2.svg?maxAge=2592000)](https://www.npmjs.com/package/node-nach)
-[![Travis](https://img.shields.io/travis/glenselle/nACH.svg?maxAge=2592000)](https://travis-ci.org/wilix-team/node-nach)
-[![Dependencies](https://david-dm.org/wilix-team/node-nach.svg)](https://david-dm.org/wilix-team/node-nach)
+![master workflow](https://github.com/jakubsokolowski/ach-ts/actions/workflows/master-ci.yml/badge.svg)
 
 nACH is a Node.js module exposing both a high & low-level API for generating ACH (Automated Clearing House) files for
 use within the ACH network. It's design makes it a high-performance, dependable and frustration-free solution for
@@ -12,7 +10,7 @@ Note: nACH does not bundle a bank agreement/partnership to upload ACH files to t
 
 ## Getting Started
 
-To intall nACH, use NPM:
+To install nACH, use NPM:
 
     $ npm i node-nach --save-dev
 
@@ -55,7 +53,7 @@ columns" called fields. To get a sense for what an ACH file actually looks like,
 Each line in an ACH file is always 94 bytes (or 94 characters) long, and the number of lines in an ACH file is required
 to _always_ be a multiple of 10. This means, if a file doesn't contain enough rows of data to be a multiple of 10, the
 ACH specification requires you to fill in the remainder of the file with rows of 9s until the number of rows is a
-multiple of 10. Of course, nACH will handle all of this for you, but it's aways good to know why it's doing it.
+multiple of 10. Of course, nACH will handle all of this for you, but it's always good to know why it's doing it.
 
 ## File Anatomy
 
