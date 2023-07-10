@@ -28,7 +28,7 @@ describe("Utils", () => {
         },
       };
 
-      expect(function () {
+      expect(() => {
         generateString(testObj);
       }).not.toThrow("Not passing object correctly.");
     });
@@ -36,15 +36,11 @@ describe("Utils", () => {
 
   describe("YYMMDD", function () {
     it("Must return the current date", function () {
-      const day = moment().get("date").toString();
-      const year = moment().get("year").toString().slice(-2);
-      const month = (moment().get("month") + 1).toString();
-
       const date = moment().format("YYMMDD");
       const dateNum = formatDate(new Date());
 
       if (dateNum === date) {
-        expect(function () {
+        expect(() => {
           formatDate;
         }).not.toThrow("Dates match");
       }

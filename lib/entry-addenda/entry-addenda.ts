@@ -1,6 +1,6 @@
 // Entry
 
-import { generateStringSync, overrideLowLevel } from "../utils";
+import { generateString, overrideLowLevel } from "../utils";
 import {
   validateACHAddendaTypeCode,
   validateDataTypes,
@@ -10,6 +10,7 @@ import {
 import { entryAddendaFields } from "./fields";
 
 import * as _ from "lodash";
+import { Field } from "../models";
 
 const highLevelOverrides = [
   "addendaTypeCode",
@@ -18,17 +19,26 @@ const highLevelOverrides = [
   "entryDetailSequenceNumber",
 ];
 
-export class EntryAddenda {
-  fields: any;
+export type EntryAddendaOptions = {
+  fields?: Record<string, Field>;
+  returnCode?: string;
+  paymentRelatedInformation?: string;
+  addendaSequenceNumber?: string;
+  entryDetailSequenceNumber?: string;
+};
 
-  constructor(options: any, autoValidate = true) {
+export class EntryAddenda {
+  fields: Record<string, Field>;
+
+  constructor(options: EntryAddendaOptions, autoValidate = true) {
     // Allow the file header defaults to be overriden if provided
-    this.fields = options.fields
-      ? _.merge(options.fields, entryAddendaFields, _.defaults)
+    const { fields, ...rest } = options;
+    this.fields = fields
+      ? _.merge(fields, entryAddendaFields, _.defaults)
       : _.cloneDeep(entryAddendaFields);
 
     // Set our high-level values
-    overrideLowLevel(highLevelOverrides, options, this);
+    overrideLowLevel(highLevelOverrides, rest, this);
 
     // Some values need special coercing, so after they've been set by overrideLowLevel() we override them
     if (options.returnCode) {
@@ -61,15 +71,15 @@ export class EntryAddenda {
 
     if (autoValidate !== false) {
       // Validate required fields have been passed
-      this._validate();
+      this.validate();
     }
   }
 
   generateString(): string {
-    return generateStringSync(this.fields);
+    return generateString(this.fields);
   }
 
-  _validate() {
+  private validate() {
     // Validate required fields
     validateRequiredFields(this.fields);
 
@@ -90,7 +100,7 @@ export class EntryAddenda {
     }
   }
 
-  set(category: string, value: any) {
+  set(category: string, value: any): void {
     // If the header has the field, set the value
     if (this.fields[category]) {
       if (category == "entryDetailSequenceNumber") {
@@ -106,9 +116,12 @@ export class EntryAddenda {
   getReturnCode() {
     if (
       this.fields.paymentRelatedInformation.value ||
-      this.fields.paymentRelatedInformation.value.length > 0
+      (this.fields.paymentRelatedInformation.value as string).length > 0
     ) {
-      return this.fields.paymentRelatedInformation.value.slice(0, 3);
+      return (this.fields.paymentRelatedInformation.value as string).slice(
+        0,
+        3,
+      );
     }
     return false;
   }

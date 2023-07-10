@@ -1,7 +1,7 @@
 import {
   computeCheckDigit,
   formatDate,
-  generateStringSync,
+  generateString,
   newLineChar,
   overrideLowLevel,
 } from "../utils";
@@ -148,9 +148,9 @@ export class Batch {
       entryHash += Number(entry.fields.receivingDFI.value);
 
       if (_.includes(creditCodes, entry.fields.transactionCode.value)) {
-        totalCredit += entry.fields.amount.value;
+        totalCredit += entry.fields.amount.value as number;
       } else if (_.includes(debitCodes, entry.fields.transactionCode.value)) {
-        totalDebit += entry.fields.amount.value;
+        totalDebit += entry.fields.amount.value as number;
       } else {
         console.log(
           "Transaction codes did not match or are not supported yet (unsupported status codes include: 23, 24, 28, 29, 33, 34, 38, 39)",
@@ -168,11 +168,11 @@ export class Batch {
   }
 
   public generateHeader(): string {
-    return generateStringSync(this.header);
+    return generateString(this.header);
   }
 
   public generateControl(): string {
-    return generateStringSync(this.control);
+    return generateString(this.control);
   }
 
   public generateEntries(): string {
