@@ -4,7 +4,9 @@
 [![Travis](https://img.shields.io/travis/glenselle/nACH.svg?maxAge=2592000)](https://travis-ci.org/wilix-team/node-nach)
 [![Dependencies](https://david-dm.org/wilix-team/node-nach.svg)](https://david-dm.org/wilix-team/node-nach)
 
-nACH is a Node.js module exposing both a high & low-level API for generating ACH (Automated Clearing House) files for use within the ACH network. It's design makes it a high-performance, dependable and frustration-free solution for developers.
+nACH is a Node.js module exposing both a high & low-level API for generating ACH (Automated Clearing House) files for
+use within the ACH network. It's design makes it a high-performance, dependable and frustration-free solution for
+developers.
 
 Note: nACH does not bundle a bank agreement/partnership to upload ACH files to the network :)
 
@@ -26,7 +28,8 @@ Now you're ready to start creating ACH files.
 
 nACH implements the ACH file specification.
 
-Each ACH file is a flat text file (.txt) which contains records and entries. Within both records and entries, are "columns" called fields. To get a sense for what an ACH file actually looks like, check out the example below:
+Each ACH file is a flat text file (.txt) which contains records and entries. Within both records and entries, are "
+columns" called fields. To get a sense for what an ACH file actually looks like, check out the example below:
 
     101 081000032 0180362811503042207A094101Some Bank              Your Company Inc       #A000001
     5220Your Company Inc                    0018036281WEBTrnsNicknaMar 5 150305   1081000030000000
@@ -49,11 +52,17 @@ Each ACH file is a flat text file (.txt) which contains records and entries. Wit
     9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
     9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999
 
-Each line in an ACH file is always 94 bytes (or 94 characters) long, and the number of lines in an ACH file is required to _always_ be a multiple of 10. This means, if a file doesn't contain enough rows of data to be a multiple of 10, the ACH specification requires you to fill in the remainder of the file with rows of 9s until the number of rows is a multiple of 10. Of course, nACH will handle all of this for you, but it's aways good to know why it's doing it.
+Each line in an ACH file is always 94 bytes (or 94 characters) long, and the number of lines in an ACH file is required
+to _always_ be a multiple of 10. This means, if a file doesn't contain enough rows of data to be a multiple of 10, the
+ACH specification requires you to fill in the remainder of the file with rows of 9s until the number of rows is a
+multiple of 10. Of course, nACH will handle all of this for you, but it's aways good to know why it's doing it.
 
 ## File Anatomy
 
-Let's delve a little deeper into the anatomy of an ACH file. ACH files were originally created when punch-card computers were the "rave", so don't consider ACH files cutting-edge technology. They aren't. But they do provide a means by which to move money from one bank account to another--the entire purpose of the ACH network. As aforementioned, each ACH file has several sections known as "records". These are as follows:
+Let's delve a little deeper into the anatomy of an ACH file. ACH files were originally created when punch-card computers
+were the "rave", so don't consider ACH files cutting-edge technology. They aren't. But they do provide a means by which
+to move money from one bank account to another--the entire purpose of the ACH network. As aforementioned, each ACH file
+has several sections known as "records". These are as follows:
 
     File header
       First batch header
@@ -68,7 +77,12 @@ Let's delve a little deeper into the anatomy of an ACH file. ACH files were orig
       Second batch control
     File control
 
-As seen above, each file has one file header and one file control (similar to a footer or a closing html bracket). After the file header, the file can contain any number of batches and each batch may contain multiple entry details. While it may seem pointless to use different batches if all the entries could be inserted into one batch, there are various reasons one might choose to divide up entries into different batches. One such reason stems from the fact that only batch headers can specify when the entries within are to be deposited into the respective account. As a result, one might use batch headers to specify different deposit dates for a group of entries.
+As seen above, each file has one file header and one file control (similar to a footer or a closing html bracket). After
+the file header, the file can contain any number of batches and each batch may contain multiple entry details. While it
+may seem pointless to use different batches if all the entries could be inserted into one batch, there are various
+reasons one might choose to divide up entries into different batches. One such reason stems from the fact that only
+batch headers can specify when the entries within are to be deposited into the respective account. As a result, one
+might use batch headers to specify different deposit dates for a group of entries.
 
 ## Usage
 
@@ -141,9 +155,9 @@ Finally to generate the file & write it to a text file
 
 ```js
 // Generate the file (result is a string with the file contents)
-file.generateFile(function (err, result) {
+file.generateFile(function(err, result) {
   // Write result to a NACHA.txt file
-  fs.writeFile("NACHA.txt", result, function (err) {
+  fs.writeFile("NACHA.txt", result, function(err) {
     if (err) console.log(err);
 
     // Log the output
@@ -156,7 +170,7 @@ Or you can use internal write method
 
 ```js
 // Generate the file (result is a string with the file contents)
-file.writeFile("./nach.txt", function (err) {
+file.writeFile("./nach.txt", function(err) {
   console.log("File writed");
 });
 ```
@@ -165,28 +179,6 @@ file.writeFile("./nach.txt", function (err) {
 
 Test coverage is currently a work in progress. To run:
 
-    $ npm test
-
-## License
-
-The MIT License (MIT)
-
-Copyright (c) 2016 Glen Selle
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+```bash
+$ npm test
+```
