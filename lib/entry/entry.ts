@@ -1,10 +1,6 @@
 import * as _ from "lodash";
 import { entryFields } from "./fields";
-import {
-  computeCheckDigit,
-  generateStringSync,
-  overrideLowLevel,
-} from "../utils";
+import { computeCheckDigit, generateString, overrideLowLevel } from "../utils";
 import {
   validateACHAddendaCode,
   validateACHCode,
@@ -14,6 +10,7 @@ import {
   validateRoutingNumber,
 } from "../validate";
 import { EntryAddenda } from "../entry-addenda";
+import { Field } from "../models";
 
 export const highLevelOverrides = [
   "transactionCode",
@@ -28,11 +25,24 @@ export const highLevelOverrides = [
   "traceNumber",
 ];
 
+export type EntryOptions = {
+  fields?: Record<string, Field>;
+  receivingDFI?: string;
+  DFIAccount?: string;
+  amount?: string;
+  idNumber?: string;
+  individualName?: string;
+  discretionaryData?: string;
+  addendaId?: string;
+  traceNumber?: string;
+  transactionCode?: string;
+};
+
 export class Entry {
   addenda: EntryAddenda[] = [];
-  fields: any;
+  fields: Record<string, Field>;
 
-  constructor(options: any, autoValidate?: boolean) {
+  constructor(options: EntryOptions, autoValidate?: boolean) {
     this.fields = options.fields
       ? _.merge(options.fields, entryFields, _.defaults)
       : _.cloneDeep(entryFields);
@@ -78,15 +88,15 @@ export class Entry {
 
     if (autoValidate !== false) {
       // Validate required fields have been passed
-      this._validate();
+      this.validate();
     }
   }
 
-  addAddenda(entryAddenda: any) {
+  addAddenda(entryAddenda: EntryAddenda): void {
     // Add indicator to Entry record
     this.set("addendaId", "1");
 
-    // Set corresponding feilds on Addenda
+    // Set corresponding fields on Addenda
     entryAddenda.set("addendaSequenceNumber", this.addenda.length + 1);
     entryAddenda.set("entryDetailSequenceNumber", this.get("traceNumber"));
 
@@ -94,11 +104,11 @@ export class Entry {
     this.addenda.push(entryAddenda);
   }
 
-  getAddendas() {
+  getAddendas(): EntryAddenda[] {
     return this.addenda;
   }
 
-  getRecordCount() {
+  getRecordCount(): number {
     return 1 + this.addenda.length;
   }
 
@@ -107,12 +117,12 @@ export class Entry {
       return entryAddenda.generateString();
     });
 
-    const fieldsString = generateStringSync(this.fields);
+    const fieldsString = generateString(this.fields);
 
     return [fieldsString].concat(addends).join("\n");
   }
 
-  _validate() {
+  private validate(): void {
     // Validate required fields
     validateRequiredFields(this.fields);
 
@@ -125,7 +135,8 @@ export class Entry {
 
     // Validate the routing number
     validateRoutingNumber(
-      this.fields.receivingDFI.value + this.fields.checkDigit.value,
+      (this.fields.receivingDFI.value as number) +
+        (this.fields.checkDigit.value as number),
     );
 
     // Validate header field lengths
@@ -135,14 +146,14 @@ export class Entry {
     validateDataTypes(this.fields);
   }
 
-  get(category) {
+  get(category): number | string {
     // If the header has it, return that (header takes priority)
     if (this.fields[category]) {
       return this.fields[category].value;
     }
   }
 
-  set(category, value) {
+  set(category: string, value: any): void {
     // If the header has the field, set the value
     if (this.fields[category]) {
       this.fields[category].value = value;

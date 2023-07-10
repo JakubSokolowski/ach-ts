@@ -3,7 +3,7 @@ import { generateFileHeader } from "./header";
 import { fileControl } from "./control";
 import {
   computeCheckDigit,
-  generateStringSync,
+  generateString,
   getNextMultiple,
   getNextMultipleDiff,
   newLineChar,
@@ -196,11 +196,11 @@ export class NachaFile {
   }
 
   generateHeader(): string {
-    return generateStringSync(this.header);
+    return generateString(this.header);
   }
 
   generateControl() {
-    return generateStringSync(this.control);
+    return generateString(this.control);
   }
 
   generateFile(): Promise<string> {
@@ -260,7 +260,13 @@ export class NachaFile {
           lines.push(inputStr.substr(i, 94));
         }
       }
-      const file: Record<string, any> = {};
+      const file: {
+        header: Record<string, string>;
+        control: Record<string, string>;
+      } = {
+        header: {},
+        control: {},
+      };
       const batches = [];
       let batchIndex = 0;
       let hasAddenda = false;
@@ -309,11 +315,11 @@ export class NachaFile {
         return;
       }
       try {
-        let nachFile;
+        let nachaFile;
         if (!hasAddenda) {
-          nachFile = new NachaFile(file.header);
+          nachaFile = new NachaFile(file.header);
         } else {
-          nachFile = new NachaFile(file.header, false);
+          nachaFile = new NachaFile(file.header, false);
         }
 
         batches.forEach((batchOb) => {
@@ -321,9 +327,9 @@ export class NachaFile {
           batchOb.entry.forEach((entry) => {
             batch.addEntry(entry);
           });
-          nachFile.addBatch(batch);
+          nachaFile.addBatch(batch);
         });
-        resolve(nachFile);
+        resolve(nachaFile);
       } catch (e) {
         reject(e);
       }

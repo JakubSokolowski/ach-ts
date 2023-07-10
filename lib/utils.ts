@@ -1,4 +1,3 @@
-/* eslint-disable prefer-rest-params */
 // Utility Functions
 import * as _ from "lodash";
 import * as moment from "moment";
@@ -13,30 +12,30 @@ import { Field } from "./models";
 export function pad(
   initialStr: string,
   width: number,
-  blank?: string | boolean,
-  blank2?: string | boolean,
+  padRight?: string | boolean,
+  padLeft?: string | boolean,
 ): string {
-  let padRight;
+  let shouldPadRight;
   let padChar;
   let result;
   const str = initialStr + "";
 
-  if (typeof arguments[2] == "boolean") {
-    padRight = arguments[2];
-    padChar = arguments[3] || " ";
-  } else if (typeof arguments[3] == "boolean") {
-    padRight = arguments[3];
-    padChar = arguments[2];
+  if (typeof padRight == "boolean") {
+    shouldPadRight = padRight;
+    padChar = padLeft || " ";
+  } else if (typeof padLeft == "boolean") {
+    shouldPadRight = padLeft;
+    padChar = padRight;
   } else {
-    padRight = true; // padRight is true be default
-    padChar = arguments[2] || " "; // The padding character is just a space by default
+    shouldPadRight = true; // padRight is true be default
+    padChar = padRight || " "; // The padding character is just a space by default
   }
 
   if (str.length >= width) {
     return str;
   } else {
     result = new Array(width - str.length + 1).join(padChar);
-    return padRight ? str + result : result + str;
+    return shouldPadRight ? str + result : result + str;
   }
 }
 
@@ -73,23 +72,12 @@ export function testRegex(regex: RegExp, field: Field): boolean {
   return true;
 }
 
-// This function iterates through the object passed in and checks to see if it has a "position" property. If so, we pad it, and then concatentate it where belongs.
-
-export function generateString(
-  object: Record<string, Field>,
-  cb?: (result: any) => void,
-) {
-  const result = generateStringSync(object);
-  if (cb) {
-    cb(result);
-  }
-}
-
-export function generateStringSync(fields: Record<string, Field>): string {
+// This function iterates through the object passed in and checks to see if it has a "position" property. If so, we pad it, and then concatenate it where belongs.
+export function generateString(fields: Record<string, Field>): string {
   let counter = 1;
   let result = "";
 
-  // How does this actually work? It doens't seem like this is enough protection from iterating infinitely.
+  // How does this actually work? It doesn't seem like this is enough protection from iterating infinitely.
   const objectCount = _.size(fields);
 
   while (counter < objectCount) {
@@ -129,8 +117,8 @@ export function parseLine(
 
 export function overrideLowLevel(
   values: string[],
-  options: Record<string, Field>,
-  self: { set: (field: string, value: Field) => void },
+  options: Record<string, any>,
+  self: { set: (field: string, value: any) => void },
 ) {
   // For each override value, check to see if it exists on the options object & if so, set it
   _.forEach(values, (field) => {
